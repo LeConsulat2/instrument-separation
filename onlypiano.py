@@ -1,33 +1,35 @@
 import os
-from pydub import AudioSegment
-import streamlit as st
 import subprocess
+import streamlit as st
+from pydub import AudioSegment
 
-# Ensure the uploads directory exists
-if not os.path.exists("uploads"):
-    os.makedirs("uploads")
+# Define the directory where model files will be stored
+MODEL_DIR = os.path.join(os.getcwd(), "demucs_models")
+
+# Ensure the directory exists
+if not os.path.exists(MODEL_DIR):
+    os.makedirs(MODEL_DIR)
 
 
+# Function to run shell commands and capture output
 def run_command(command):
-    """Run a shell command and capture the output."""
-    try:
-        result = subprocess.run(
-            command,
-            shell=True,
-            check=True,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            text=True,
-        )
-        return result.stdout, result.stderr
-    except subprocess.CalledProcessError as e:
-        return None, f"An error occurred: {e.stderr}"
+    result = subprocess.run(
+        command,
+        shell=True,
+        check=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True,
+    )
+    return result.stdout, result.stderr
 
 
-# Step 1 - Separate the audio into different stems using Demucs v4
+# Function to separate audio into different stems using Demucs v4
 def separate_audio(input_file, output_folder, progress_bar):
     st.write("🔄 Separating audio into stems...")
-    command = f'demucs -n htdemucs_ft "{input_file}" -o "{output_folder}"'
+
+    # Command to run Demucs with a custom model directory
+    command = f'DEMUCS_CACHE={MODEL_DIR} demucs -n htdemucs_ft "{input_file}" -o "{output_folder}"'
     stdout, stderr = run_command(command)
 
     if stderr:
@@ -39,7 +41,7 @@ def separate_audio(input_file, output_folder, progress_bar):
     return True
 
 
-# Step 2 - Save each stem as a separate MP3
+# Function to save each stem as a separate MP3 file
 def save_stems(output_folder, original_file_name, progress_bar):
     st.write("🔄 Saving stems as MP3 files...")
     stem_names = ["vocals", "drums", "bass", "other"]  # Adjusted for Demucs
@@ -50,36 +52,28 @@ def save_stems(output_folder, original_file_name, progress_bar):
     for i, stem in enumerate(stem_names):
         stem_file_path = os.path.join(stems_folder, f"{stem}.wav")
         if os.path.exists(stem_file_path):
-            try:
-                stem_audio = AudioSegment.from_file(stem_file_path)
-                output_file = os.path.join(output_folder, f"{base_name}-{stem}.mp3")
-                stem_audio.export(output_file, format="mp3")
-                st.write(f"✅ Saved {output_file}")
-            except Exception as e:
-                st.error(f"Error saving {stem} as MP3: {e}")
-                progress_bar.progress(100)
-                return False
+            stem_audio = AudioSegment.from_file(stem_file_path)
+            output_file = os.path.join(output_folder, f"{base_name}-{stem}.mp3")
+            stem_audio.export(output_file, format="mp3")
+            st.write(f"✅ Saved {output_file}")
         else:
             st.warning(f"Stem file {stem_file_path} not found.")
         progress_bar.progress(50 + (i + 1) * step_progress)
     return True
 
 
+# Function to convert MP4 to MP3 if needed
 def convert_to_mp3(input_file):
     if input_file.endswith(".mp4"):
         st.write("🔄 Converting MP4 to MP3...")
-        try:
-            audio = AudioSegment.from_file(input_file, "mp4")
-            mp3_file = input_file.replace(".mp4", ".mp3")
-            audio.export(mp3_file, format="mp3")
-            return mp3_file
-        except Exception as e:
-            st.error(f"Error converting MP4 to MP3: {e}")
-            return None
+        audio = AudioSegment.from_file(input_file, "mp4")
+        mp3_file = input_file.replace(".mp4", ".mp3")
+        audio.export(mp3_file, format="mp3")
+        return mp3_file
     return input_file
 
 
-# Step 4 - Main function to process the audio file
+# Main function to process the audio file
 def process_audio(input_file):
     # Define output_folder (same location as the input file)
     output_folder = os.path.dirname(input_file)
@@ -87,8 +81,6 @@ def process_audio(input_file):
 
     # Convert MP4 to MP3 if needed
     input_file = convert_to_mp3(input_file)
-    if not input_file:
-        return  # Stop if conversion failed
 
     # Initialize progress bar
     progress_bar = st.progress(0)
