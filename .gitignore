@@ -1,4 +1,4 @@
 /env
-
+/demucs_models
 .streamlit/*
 !.streamlit/config.toml
