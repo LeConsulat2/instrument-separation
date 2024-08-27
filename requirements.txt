@@ -2,3 +2,4 @@ demucs
 pydub
 streamlit
 ffmpeg
+python-3.11.8
