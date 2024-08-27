@@ -8,28 +8,26 @@ if not os.path.exists("uploads"):
 
 
 # Step 1 - Separate the audio into different stems using Demucs v4
-def separate_audio(input_file, output_folder, progress_bar):
+def separate_audio(input_file, output_folder):
     st.write("🔄 Separating audio into stems...")
+    # Use the experimental Demucs v4 model that includes piano separation
     os.system(f'demucs -n htdemucs_ft "{input_file}" -o "{output_folder}"')
-    progress_bar.progress(50)  # Assuming separation is half the total process
 
 
 # Step 2 - Save each stem as a separate MP3
-def save_stems(output_folder, original_file_name, progress_bar):
+def save_stems(output_folder, original_file_name):
     st.write("🔄 Saving stems as MP3 files...")
-    stem_names = ["vocals", "drums", "bass", "piano", "other"]
+    stem_names = ["vocals", "drums", "bass", "piano", "other"]  # Adjusted for Demucs
     base_name = os.path.splitext(original_file_name)[0]
     stems_folder = os.path.join(output_folder, base_name)
 
-    step_progress = 50 / len(stem_names)  # Remaining 50% of progress distributed
-    for i, stem in enumerate(stem_names):
+    for stem in stem_names:
         stem_file_path = os.path.join(stems_folder, f"{stem}.wav")
         if os.path.exists(stem_file_path):
             stem_audio = AudioSegment.from_file(stem_file_path)
             output_file = os.path.join(output_folder, f"{base_name}-{stem}.mp3")
             stem_audio.export(output_file, format="mp3")
             st.write(f"✅ Saved {output_file}")
-        progress_bar.progress(50 + (i + 1) * step_progress)
 
 
 def convert_to_mp3(input_file):
@@ -51,17 +49,13 @@ def process_audio(input_file):
     # Convert MP4 to MP3 if needed
     input_file = convert_to_mp3(input_file)
 
-    # Initialize progress bar
-    progress_bar = st.progress(0)
-
     # Separate the audio
-    separate_audio(input_file, output_folder, progress_bar)
+    separate_audio(input_file, output_folder)
 
     # Save each stem as a separate MP3 file
-    save_stems(output_folder, original_file_name, progress_bar)
+    save_stems(output_folder, original_file_name)
 
     st.success(f"All stems saved in {output_folder}")
-    progress_bar.progress(100)
 
 
 # Streamlit Interface
