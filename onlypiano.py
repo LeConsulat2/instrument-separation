@@ -2,6 +2,10 @@ import os
 import subprocess
 import streamlit as st
 from pydub import AudioSegment
+import warnings
+
+# Suppress SyntaxWarnings from pydub
+warnings.filterwarnings("ignore", category=SyntaxWarning)
 
 # Define the directory where model files will be stored
 MODEL_DIR = os.path.join(os.getcwd(), "demucs_models")
