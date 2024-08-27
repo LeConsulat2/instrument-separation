@@ -1,0 +1,5 @@
+demucs
+pydub
+streamlit
+ffmpeg-python
+
