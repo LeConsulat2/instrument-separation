@@ -1,4 +1,3 @@
-ffmpeg
 streamlit
 pydub
 demucs
